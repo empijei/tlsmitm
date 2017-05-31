@@ -23,10 +23,11 @@ func main() {
 	}
 
 	rules = append(rules, listener{
-		localport:  ":9443",
-		remoteport: ":8000",
-		remoteip:   "127.0.0.1",
-		secure:     true,
+		localport:   ":9443",
+		remoteport:  ":8000",
+		remoteip:    "127.0.0.1",
+		secure:      true,
+		protoSwitch: false,
 		certconf: &tls.Config{
 			Certificates:       []tls.Certificate{cer},
 			InsecureSkipVerify: true,

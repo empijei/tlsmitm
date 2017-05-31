@@ -8,19 +8,34 @@ import (
 	"os"
 )
 
+const encr = "encrypted"
+const unen = "unencrypted"
+
 type listener struct {
 	localport, remoteport, remoteip string
 	secure                          bool
 	certconf                        *tls.Config
+	protoSwitch                     bool
 }
 
 func (l *listener) String() string {
-	var text = "encrypted"
-	//This is ugly but fun
-	if !l.secure {
-		text = "un" + text
+	var localtext, remotetext string
+	if l.secure {
+		localtext = encr
+		if l.protoSwitch {
+			remotetext = unen
+		} else {
+			remotetext = encr
+		}
+	} else {
+		localtext = unen
+		if l.protoSwitch {
+			remotetext = encr
+		} else {
+			remotetext = unen
+		}
 	}
-	return l.localport + " -> " + l.remoteip + l.remoteport + " " + text
+	return localtext + " " + l.localport + " -> " + l.remoteip + l.remoteport + " " + remotetext
 }
 
 func (l *listener) Listen() {
@@ -48,7 +63,8 @@ func (l *listener) Listen() {
 			//Dump traffic to stdout
 			lt := io.TeeReader(lc, os.Stdout)
 			var rc net.Conn
-			if l.secure {
+			//This means (l.secure && !l.protoSwitch) || (!l.secure && l.protoSwitch)
+			if l.secure != l.protoSwitch {
 				rc, err = tls.Dial("tcp", l.remoteip+l.remoteport,
 					&tls.Config{
 						//TODO make this configurable
