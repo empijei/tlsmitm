@@ -13,6 +13,8 @@ func main() {
 
 	//TODO parse CLI parameters and create rules
 
+	//TODO allow TLS -> Plain and Plain -> TLS
+
 	//This is the creation of a sample rule
 	cer, err := tls.LoadX509KeyPair("server.crt", "server.key")
 	if err != nil {
