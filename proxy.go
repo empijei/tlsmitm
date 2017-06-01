@@ -2,10 +2,12 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
+	"time"
 )
 
 const encr = "encrypted"
@@ -60,10 +62,23 @@ func (l *listener) Listen() {
 		go func(lc net.Conn) {
 			log.Printf("Got incoming connection from ip %s on port %s", conn.RemoteAddr().String(), l.localport)
 			defer func() { _ = lc.Close() }()
-			//Dump traffic to stdout
+			//Dump client traffic to stdout
 			lt := io.TeeReader(lc, os.Stdout)
+
+			//Dump client traffic to file
+			outclientfile, filerr := os.OpenFile(
+				fmt.Sprintf("%d_client.log", time.Now().UnixNano()),
+				os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+				0666)
+			if filerr != nil {
+				log.Printf("Could not open logfile: %s\n, proceeding without it", filerr.Error())
+			} else {
+				lt = io.TeeReader(lt, outclientfile)
+			}
+
 			var rc net.Conn
 			//This means (l.secure && !l.protoSwitch) || (!l.secure && l.protoSwitch)
+			log.Printf("Contacting remote server @%s", l.remoteip+l.remoteport)
 			if l.secure != l.protoSwitch {
 				rc, err = tls.Dial("tcp", l.remoteip+l.remoteport,
 					&tls.Config{
@@ -75,13 +90,37 @@ func (l *listener) Listen() {
 			}
 			if err != nil {
 				//TODO handle this
-				panic(err)
+				log.Println(err)
+				return
 			}
+			log.Println("Connected to remote server")
+
 			defer func() { _ = rc.Close() }()
-			//Dump traffic to stdout
+			//Dump server traffic to stdout
 			rt := io.TeeReader(rc, os.Stdout)
-			go func() { _, _ = io.Copy(rc, lt) }()
-			_, _ = io.Copy(lc, rt)
+
+			//Dump server traffic to file
+			outserverfile, filerr := os.OpenFile(
+				fmt.Sprintf("%d_server.log", time.Now().UnixNano()),
+				os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+				0666)
+			if filerr != nil {
+				log.Printf("Could not open logfile: %s\n, proceeding without it", filerr.Error())
+			} else {
+				rt = io.TeeReader(rt, outserverfile)
+			}
+
+			go func() {
+				_, err := io.Copy(rc, lt)
+				log.Printf("Error while sending to remote server: %s", err)
+				_ = conn.Close()
+				_ = rc.Close()
+			}()
+			_, err = io.Copy(lc, rt)
+			_ = conn.Close()
+			_ = rc.Close()
+			log.Printf("Error while receiving from remote server: %s", err)
+			log.Printf("Connection with %s closed", conn.RemoteAddr().String())
 		}(conn)
 	}
 
