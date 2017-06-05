@@ -114,14 +114,18 @@ func (l *listener) Listen() {
 
 			go func() {
 				_, err := io.Copy(rc, lt)
-				log.Printf("Error while sending to remote server: %s", err.Error())
+				if err != nil {
+					log.Printf("Error while sending to remote server: %s", err.Error())
+				}
 				_ = conn.Close()
 				_ = rc.Close()
 			}()
 			_, err = io.Copy(lc, rt)
 			_ = conn.Close()
 			_ = rc.Close()
-			log.Printf("Error while receiving from remote server: %s", err.Error())
+			if err != nil {
+				log.Printf("Error while receiving from remote server: %s", err.Error())
+			}
 			log.Printf("Connection with %s closed", conn.RemoteAddr().String())
 		}(conn)
 	}
