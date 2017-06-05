@@ -76,10 +76,11 @@ func (l *listener) Listen() {
 			} else {
 				lt = io.TeeReader(lt, outclientfile)
 			}
+			_, _ = outclientfile.Write([]byte("Remote: " + conn.RemoteAddr().String() + " " + l.String() + "\n"))
 
 			var rc net.Conn
-			//This means (l.secure && !l.protoSwitch) || (!l.secure && l.protoSwitch)
 			log.Printf("Contacting remote server @%s", l.remoteip+l.remoteport)
+			//This means (l.secure && !l.protoSwitch) || (!l.secure && l.protoSwitch)
 			if l.secure != l.protoSwitch {
 				rc, err = tls.Dial("tcp", l.remoteip+l.remoteport,
 					&tls.Config{
