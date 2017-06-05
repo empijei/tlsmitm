@@ -60,6 +60,7 @@ func (l *listener) Listen() {
 			log.Fatal(err)
 		}
 		go func(lc net.Conn) {
+			filename := fmt.Sprintf("%d", time.Now().UnixNano())
 			log.Printf("Got incoming connection from ip %s on port %s", conn.RemoteAddr().String(), l.localport)
 			defer func() { _ = lc.Close() }()
 			//Dump client traffic to stdout
@@ -67,7 +68,7 @@ func (l *listener) Listen() {
 
 			//Dump client traffic to file
 			outclientfile, filerr := os.OpenFile(
-				fmt.Sprintf("%d_client.log", time.Now().UnixNano()),
+				fmt.Sprintf("%s_client.log", filename),
 				os.O_APPEND|os.O_CREATE|os.O_WRONLY,
 				0666)
 			if filerr != nil {
@@ -101,7 +102,7 @@ func (l *listener) Listen() {
 
 			//Dump server traffic to file
 			outserverfile, filerr := os.OpenFile(
-				fmt.Sprintf("%d_server.log", time.Now().UnixNano()),
+				fmt.Sprintf("%s_server.log", filename),
 				os.O_APPEND|os.O_CREATE|os.O_WRONLY,
 				0666)
 			if filerr != nil {
@@ -112,14 +113,14 @@ func (l *listener) Listen() {
 
 			go func() {
 				_, err := io.Copy(rc, lt)
-				log.Printf("Error while sending to remote server: %s", err)
+				log.Printf("Error while sending to remote server: %s", err.Error())
 				_ = conn.Close()
 				_ = rc.Close()
 			}()
 			_, err = io.Copy(lc, rt)
 			_ = conn.Close()
 			_ = rc.Close()
-			log.Printf("Error while receiving from remote server: %s", err)
+			log.Printf("Error while receiving from remote server: %s", err.Error())
 			log.Printf("Connection with %s closed", conn.RemoteAddr().String())
 		}(conn)
 	}
