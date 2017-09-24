@@ -1,0 +1,15 @@
+{
+"Localport": ":8080",
+"Remoteport": ":80",
+"Remoteip": "127.0.0.1"
+}
+{
+"Localport": ":9443",
+"Remoteport": ":8443",
+"Remoteip": "127.0.0.1",
+"Secure": true,
+"ProtoSwitch": false,
+"KeyName": "server.key",
+"CrtName": "server.crt",
+"Verify": false
+}

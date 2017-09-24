@@ -1,0 +1,5 @@
+{
+"Localport": ":8080",
+"Remoteport": ":80",
+"Remoteip": "127.0.0.1"
+}
