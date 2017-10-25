@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"io"
 	"net"
 )
 
@@ -27,23 +26,7 @@ type listener struct {
 
 	// Unexported field, will be created on load
 	certconf *tls.Config
-	wwrapper func(io.Writer) io.Writer
-	rwrapper func(io.Reader) io.Reader
 	ll       net.Listener
-}
-
-func (wl *listener) WrapWriter(w io.WriteCloser) io.WriteCloser {
-	if wl.wwrapper == nil {
-		return w
-	}
-	return attachCloseToWriter(wl.wwrapper(w), w)
-}
-
-func (wl *listener) WrapReader(r io.ReadCloser) io.ReadCloser {
-	if wl.rwrapper == nil {
-		return r
-	}
-	return attachCloseToReader(wl.rwrapper(r), r)
 }
 
 func (wl *listener) Close() error {
@@ -68,8 +51,5 @@ func (l *listener) String() string {
 		}
 	}
 	suffix := ""
-	if l.wwrapper != nil || l.rwrapper != nil {
-		suffix = " (wrapped)"
-	}
 	return localtext + " " + l.Localport + " -> " + l.Remoteip + l.Remoteport + " " + remotetext + suffix
 }
