@@ -10,45 +10,15 @@ import (
 	"time"
 )
 
-const encr = "encrypted"
-const unen = "unencrypted"
-
-type listener struct {
-	localport, remoteport, remoteip string
-	secure                          bool
-	certconf                        *tls.Config
-	protoSwitch                     bool
-}
-
-func (l *listener) String() string {
-	var localtext, remotetext string
-	if l.secure {
-		localtext = encr
-		if l.protoSwitch {
-			remotetext = unen
-		} else {
-			remotetext = encr
-		}
-	} else {
-		localtext = unen
-		if l.protoSwitch {
-			remotetext = encr
-		} else {
-			remotetext = unen
-		}
-	}
-	return localtext + " " + l.localport + " -> " + l.remoteip + l.remoteport + " " + remotetext
-}
-
 func (l *listener) Listen() {
 	//TODO check if the listener was properly constructed
 
 	var ll net.Listener
 	var err error
-	if l.secure {
-		ll, err = tls.Listen("tcp", l.localport, l.certconf)
+	if l.Secure {
+		ll, err = tls.Listen("tcp", l.Localport, l.certconf)
 	} else {
-		ll, err = net.Listen("tcp", l.localport)
+		ll, err = net.Listen("tcp", l.Localport)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -61,7 +31,7 @@ func (l *listener) Listen() {
 		}
 		go func(lc net.Conn) {
 			filename := fmt.Sprintf("%d", time.Now().UnixNano())
-			log.Printf("Got incoming connection from ip %s on port %s", conn.RemoteAddr().String(), l.localport)
+			log.Printf("Got incoming connection from ip %s on port %s", conn.RemoteAddr().String(), l.Localport)
 			defer func() { _ = lc.Close() }()
 			//Dump client traffic to stdout
 			lt := io.TeeReader(lc, os.Stdout)
@@ -79,16 +49,16 @@ func (l *listener) Listen() {
 			_, _ = outclientfile.Write([]byte("Remote: " + conn.RemoteAddr().String() + " " + l.String() + "\n"))
 
 			var rc net.Conn
-			log.Printf("Contacting remote server @%s", l.remoteip+l.remoteport)
+			log.Printf("Contacting remote server @%s", l.Remoteip+l.Remoteport)
 			//This means (l.secure && !l.protoSwitch) || (!l.secure && l.protoSwitch)
-			if l.secure != l.protoSwitch {
-				rc, err = tls.Dial("tcp", l.remoteip+l.remoteport,
+			if l.Secure != l.ProtoSwitch {
+				rc, err = tls.Dial("tcp", l.Remoteip+l.Remoteport,
 					&tls.Config{
 						//TODO make this configurable
 						InsecureSkipVerify: true,
 					})
 			} else {
-				rc, err = net.Dial("tcp", l.remoteip+l.remoteport)
+				rc, err = net.Dial("tcp", l.Remoteip+l.Remoteport)
 			}
 			if err != nil {
 				//TODO handle this

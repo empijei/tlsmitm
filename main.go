@@ -1,38 +1,34 @@
 package main
 
 import (
+	"flag"
+	"log"
 	"os"
 	"os/signal"
 )
 
 var rules []listener
 
+var nolog = flag.Bool("silent", false, "do not log the traffic")
+
+//TODO print example
+var conf = flag.String("conf", "conf.json", "a conf file")
+
 func main() {
-
+	flag.Parse()
 	//TODO parse CLI parameters and create rules
-
-	//TODO allow TLS -> Plain and Plain -> TLS
-
-	//This is the creation of a sample rule
-	//cer, err := tls.LoadX509KeyPair("server.crt", "server.key")
-	//if err != nil {
-	//log.Println(err)
-	//return
-	//}
-
-	rules = append(rules, listener{
-		localport:   ":9443",
-		remoteport:  ":8000",
-		remoteip:    "127.0.0.1",
-		secure:      false,
-		protoSwitch: false,
-		//certconf: &tls.Config{
-		//Certificates:       []tls.Certificate{cer},
-		//InsecureSkipVerify: true,
-		//},
-	})
-	//Rule creation ends here
-
+	f, err := os.Open(*conf)
+	if err != nil {
+		log.Printf("Conf file not found: %s\n", *conf)
+		return
+	}
+	log.Println("Loading conf...")
+	err = loadConf(f)
+	if err != nil {
+		log.Println("Error while loading conf: ", err)
+		return
+	}
+	log.Println("Conf loaded...")
 	for _, l := range rules {
 		l := l
 		go l.Listen()
